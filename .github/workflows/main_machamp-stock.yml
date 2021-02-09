@@ -21,6 +21,14 @@ jobs:
       with:
         python-version: '3.8'
 
+    - name: Create and start virtual environment
+      run: |
+        python3 -m venv .env
+        source .env/bin/activate
+
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
     - name: Build using AppService-Build
       uses: azure/appservice-build@v2
       with:
