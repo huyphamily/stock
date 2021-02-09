@@ -17,7 +17,7 @@ def get_ratios(symbol, limit=50):
     quarterly_counts = len(quarterly)
 
     # sort quarterly reports by date
-    sorted(quarterly, key=lambda q: q['date'])
+    sorted(quarterly, key=lambda q: q['fillingDate'])
 
     # calculate rule40 for each quarter
     ratios = []
@@ -36,7 +36,7 @@ def get_ratios(symbol, limit=50):
 
         data = {
             'Ticker': symbol.upper(),
-            'Date': curr_qr.get('date'),
+            'Date': curr_qr.get('fillingDate'),
             'Rule 40': annual_qr_growth + ebitda_ratio,
             'Ebita Ratio': ebitda_ratio,
             'Annual Growth': annual_qr_growth,
