@@ -3,4 +3,5 @@ from . import views
 
 urlpatterns = [
     path('', views.index, name='index'),
+    path('symbol/<slug:ticker>', views.symbol, name='symbol'),
 ]

@@ -30,7 +30,7 @@ SECRET_KEY = env("SECRET_KEY", default="unsafe-secret-key-123-456-789")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DEBUG", default="False") == "True"
 
-ALLOWED_HOSTS = ["machamp-stock.azurewebsites.net"]
+ALLOWED_HOSTS = ["machamp-stock.azurewebsites.net", "127.0.0.1"]
 
 
 # Application definition
