@@ -9,4 +9,11 @@ def index(request):
 
 def symbol(request, ticker):
     ratios = get_ratios(ticker)
+
+    output = ''
+
+    for r in ratios:
+        output += ",".join(str(r) for r in r.values())
+        output += '\n'
+
     return HttpResponse(ratios)
