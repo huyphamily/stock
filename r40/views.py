@@ -16,4 +16,4 @@ def symbol(request, ticker):
         output += ",".join(str(r) for r in r.values())
         output += '\n'
 
-    return HttpResponse(ratios)
+    return HttpResponse(output)
