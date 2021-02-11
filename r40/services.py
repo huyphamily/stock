@@ -8,7 +8,8 @@ env = environ.Env()
 environ.Env.read_env("stock/.env")
 fmp_api_key = env("FMP_API_KEY", default="fmpapikey")
 
-INDUSTRY_ALLOW_LIST = {'Software Application', 'Software Infrastructure', 'Internet Content & Information'}
+INDUSTRY_ALLOW_LIST = {"Software Application", "Software Infrastructure", "Internet Content & Information"}
+FILLING_NAME_8K = "8-K"
 
 
 def get_earning_companies(report_date):
@@ -23,15 +24,37 @@ def get_earning_companies(report_date):
         company_profile = fmpsdk.company_profile(apikey=fmp_api_key, symbol=cur_company_symbol)
         if len(company_profile) > 0 and company_profile[0].get("industry") in INDUSTRY_ALLOW_LIST:
             company_profile_obj = company_profile[0]
+            # r40 score
             data = get_latest_rule40(cur_company_symbol)
-
             if data is None:
-                continue
+                data = {
+                    "Ticker": cur_company_symbol.upper(),
+                    "Date": "N/A",
+                    "Rule 40": "N/A",
+                    "Ebita Ratio": "N/A",
+                    "Annual Growth": "N/A",
+                }
 
+            # Other info
             data["Country"] = company_profile_obj.get("country")
             data["Exchange"] = company_profile_obj.get("exchangeShortName")
             data["Industry"] = company_profile_obj.get("industry")
             data["Sector"] = company_profile_obj.get("sector")
+
+            # sec filing
+            filings = fmpsdk.sec_filings(apikey=fmp_api_key, symbol=cur_company_symbol, limit=10)
+
+            data["8K File"] = "N/A"
+            data["8K Date"] = "N/A"
+            for filing in filings:
+                if filing.get("type") == FILLING_NAME_8K:
+                    data["8K File"] = filing.get("finalLink")
+                    data["8K Date"] = datetime.strptime(filing.get("fillingDate"), "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d")
+                    break
+
+            data["SEC Link"] = "N/A" if len(filings) == 0\
+                else "https://www.sec.gov/cgi-bin/browse-edgar?CIK=" + filings[0].get("cik")
+
             filtered_companies.append(data)
 
     return filtered_companies
