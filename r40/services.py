@@ -92,13 +92,13 @@ def get_latest_rule40(ticker):
         past_year = quarterlies[4]
 
         # shitty date screener
-        if curr_qr.get('date').startswith('2020') or curr_qr.get('date').startswith('2021'):
+        if curr_qr.get('fillingDate').startswith('2020') or curr_qr.get('fillingDate').startswith('2021'):
             annual_qr_growth = (curr_qr.get('revenue') - past_year.get('revenue')) / past_year.get('revenue')
             ebitda_ratio = curr_qr.get('ebitda') / curr_qr.get('revenue')
 
             data = {
                 'Ticker': ticker,
-                'Date': curr_qr.get('date'),
+                'Date': curr_qr.get('fillingDate'),
                 'Rule 40': annual_qr_growth + ebitda_ratio,
                 'Ebita Ratio': ebitda_ratio,
                 'Annual Growth': annual_qr_growth,
