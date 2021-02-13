@@ -1,6 +1,6 @@
 import fmpsdk
 from datetime import date, datetime
-from re import match, search
+from re import match
 from stock.env import FMP_API_KEY
 import requests
 from bs4 import BeautifulSoup
@@ -8,6 +8,7 @@ from bs4 import BeautifulSoup
 
 INDUSTRY_ALLOW_LIST = {"Software Application", "Software Infrastructure", "Internet Content & Information", "Software",
                        "Information Technology Services", "Software—Infrastructure"}
+EXCHANGE_ALLOW_LIST = {"NASDAQ", "NYSE"}
 FILLING_NAME_8K = "8-K"
 
 
@@ -147,8 +148,8 @@ def get_10q_list(report_date):
     items = soup.find_all('item')
 
     # 10-Q and on that date
-    filtered_items = list(filter((lambda item: item.description.string == "10-Q" and
-                                  item.find('edgar:filingDate').string == report_date), items))
+    filtered_items = list(filter((lambda i: i.description.string == "10-Q" and
+                                  i.find('edgar:filingDate').string == report_date), items))
 
     # grab list of ticker
     result = []
@@ -179,15 +180,18 @@ def get_daily_r40_list(report_date):
         if len(company_profile) == 0:
             continue
 
+        if company_profile[0].get("exchangeShortName") not in EXCHANGE_ALLOW_LIST:
+            continue
+
         if company_profile[0].get("industry") not in INDUSTRY_ALLOW_LIST:
             continue
 
-        #grab r40 result
-        print(f"checking r40: {ticker}")
+        # grab r40 result
         latest_40 = get_latest_rule40(ticker)
 
         if latest_40 is not None:
-            print(f"found r40 result: {ticker}")
+            latest_40["mktCap"] = company_profile[0].get("mktCap")
+            latest_40["country"] = company_profile[0].get("country")
             result.append(latest_40)
 
     return result
