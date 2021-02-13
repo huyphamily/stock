@@ -146,9 +146,16 @@ def get_10q_list(report_date):
     filtered_sec_result = list(filter((lambda x: x.edgar_filingdate == report_date and x.summary == "10-Q"),
                                       sec_feed_result.entries))
     # grab list of company names
-    company_names = list(map((lambda x: x.edgar_companyname), filtered_sec_result))
+    return list(map((lambda x: x.edgar_companyname), filtered_sec_result))
+
+
+def get_daily_r40_list(report_date):
+    if report_date is None or not match("^\\d{2}/\\d{2}/\\d{4}$", report_date):
+        report_date = date.today().strftime("%m/%d/%Y")
+
+    company_names = get_10q_list(report_date)
+
     session = HTMLSession()
-    print(f"There was {len(filtered_sec_result)} sec results from this date")
     result = []
     for company_name in company_names:
         # search for ticker symbol
@@ -179,6 +186,4 @@ def get_10q_list(report_date):
             print(f"found r40 result: {ticker}")
             result.append(latest_40)
 
-    print("result:")
-    print(result)
     return result

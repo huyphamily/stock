@@ -1,6 +1,6 @@
 from django.http import HttpResponse
 from django.shortcuts import render
-from r40.services import get_ratios, get_earning_companies, get_10q_list
+from r40.services import get_ratios, get_earning_companies, get_10q_list, get_daily_r40_list
 from common.util import convert_to_csv_format
 from datetime import date
 from re import match
@@ -38,7 +38,7 @@ def earning(request):
 
 def daily_check(request):
     report_date = request.GET.get("date")
-    companies = get_10q_list(report_date)
+    companies = get_daily_r40_list(report_date)
 
     # Create the HttpResponse object with the appropriate CSV header.
     response = HttpResponse(content_type='text/csv')
@@ -52,3 +52,10 @@ def daily_check(request):
         writer.writerow([str(value) for value in company.values()])
 
     return response
+
+
+def list_10q(request):
+    report_date = request.GET.get("date")
+    companies = get_10q_list(report_date)
+
+    return HttpResponse("\n".join(companies))
