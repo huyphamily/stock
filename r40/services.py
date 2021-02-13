@@ -1,7 +1,9 @@
 import fmpsdk
 from datetime import date, datetime
-from re import match
+from re import match, search
 from stock.env import FMP_API_KEY
+import feedparser
+from requests_html import HTMLSession
 
 
 INDUSTRY_ALLOW_LIST = {"Software Application", "Software Infrastructure", "Internet Content & Information"}
@@ -45,10 +47,11 @@ def get_earning_companies(report_date):
             for filing in filings:
                 if filing.get("type") == FILLING_NAME_8K:
                     data["8K File"] = filing.get("finalLink")
-                    data["8K Date"] = datetime.strptime(filing.get("fillingDate"), "%Y-%m-%d %H:%M:%S").strftime("%Y-%m-%d")
+                    data["8K Date"] = datetime.strptime(filing.get("fillingDate"), "%Y-%m-%d %H:%M:%S").strftime(
+                        "%Y-%m-%d")
                     break
 
-            data["SEC Link"] = "N/A" if len(filings) == 0\
+            data["SEC Link"] = "N/A" if len(filings) == 0 \
                 else "https://www.sec.gov/cgi-bin/browse-edgar?CIK=" + filings[0].get("cik")
 
             filtered_companies.append(data)
@@ -81,7 +84,7 @@ def get_ratios(symbol, limit=50):
             continue
 
         annual_qr_growth = (curr_qr.get('revenue') - past_year.get('revenue')) / past_year.get('revenue')
-        ebitda_ratio = curr_qr.get('ebitda')/curr_qr.get('revenue')
+        ebitda_ratio = curr_qr.get('ebitda') / curr_qr.get('revenue')
 
         data = {
             'Ticker': symbol.upper(),
@@ -128,3 +131,54 @@ def get_latest_rule40(ticker):
     except ZeroDivisionError:
         return None
     return None
+
+
+def get_10q_list(report_date):
+    if report_date is None or not match("^\\d{2}/\\d{2}/\\d{4}$", report_date):
+        report_date = date.today().strftime("%m/%d/%Y")
+
+    month = report_date[0:2]
+    year = report_date[6:10]
+
+    # sec result for that month
+    sec_feed_result = feedparser.parse(f"https://www.sec.gov/Archives/edgar/monthly/xbrlrss-{year}-{month}.xml")
+    # 10-Q and on that date
+    filtered_sec_result = list(filter((lambda x: x.edgar_filingdate == report_date and x.summary == "10-Q"),
+                                      sec_feed_result.entries))
+    # grab list of company names
+    company_names = list(map((lambda x: x.edgar_companyname), filtered_sec_result))
+    session = HTMLSession()
+    print(f"There was {len(filtered_sec_result)} sec results from this date")
+    result = []
+    for company_name in company_names:
+        # search for ticker symbol
+        search_result = session.get(f"https://google.com/search?q={company_name} stock")
+        raw_html = str(search_result.html.raw_html)
+        ticker_search = search("https://finance\.yahoo\.com/quote/.{1,8}/", raw_html)
+
+        if ticker_search is None:
+            print(f"no ticker found for {company_name}")
+            continue
+
+        ticker = ticker_search.group(0)[32:-1]
+        print(f"{company_name}: {ticker}")
+        # filter out non saas companies
+        company_profile = fmpsdk.company_profile(apikey=FMP_API_KEY, symbol=ticker)
+
+        if len(company_profile) == 0:
+            continue
+
+        if company_profile[0].get("industry") not in INDUSTRY_ALLOW_LIST:
+            continue
+
+        #grab r40 result
+        print(f"checking r40: {ticker}")
+        latest_40 = get_latest_rule40(ticker)
+
+        if latest_40 is not None:
+            print(f"found r40 result: {ticker}")
+            result.append(latest_40)
+
+    print("result:")
+    print(result)
+    return result
