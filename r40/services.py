@@ -1,12 +1,8 @@
 import fmpsdk
-import environ
 from datetime import date, datetime
 from re import match
+from stock.env import FMP_API_KEY
 
-
-env = environ.Env()
-environ.Env.read_env("stock/.env")
-fmp_api_key = env("FMP_API_KEY", default="fmpapikey")
 
 INDUSTRY_ALLOW_LIST = {"Software Application", "Software Infrastructure", "Internet Content & Information"}
 FILLING_NAME_8K = "8-K"
@@ -16,12 +12,12 @@ def get_earning_companies(report_date):
     if report_date is None or not match("^\\d{4}-\\d{2}-\\d{2}$", report_date):
         report_date = date.today().strftime("%Y-%m-%d")
 
-    companies = fmpsdk.earning_calendar(apikey=fmp_api_key, from_date=report_date, to_date=report_date)
+    companies = fmpsdk.earning_calendar(apikey=FMP_API_KEY, from_date=report_date, to_date=report_date)
     filtered_companies = []
 
     for company in companies:
         cur_company_symbol = company.get("symbol")
-        company_profile = fmpsdk.company_profile(apikey=fmp_api_key, symbol=cur_company_symbol)
+        company_profile = fmpsdk.company_profile(apikey=FMP_API_KEY, symbol=cur_company_symbol)
         if len(company_profile) > 0 and company_profile[0].get("industry") in INDUSTRY_ALLOW_LIST:
             company_profile_obj = company_profile[0]
             # r40 score
@@ -42,7 +38,7 @@ def get_earning_companies(report_date):
             data["Sector"] = company_profile_obj.get("sector")
 
             # sec filing
-            filings = fmpsdk.sec_filings(apikey=fmp_api_key, symbol=cur_company_symbol, limit=10)
+            filings = fmpsdk.sec_filings(apikey=FMP_API_KEY, symbol=cur_company_symbol, limit=10)
 
             data["8K File"] = "N/A"
             data["8K Date"] = "N/A"
@@ -62,7 +58,7 @@ def get_earning_companies(report_date):
 
 def get_ratios(symbol, limit=50):
     # fetch quarterly reports from fmp
-    quarterly = fmpsdk.income_statement(apikey=fmp_api_key,
+    quarterly = fmpsdk.income_statement(apikey=FMP_API_KEY,
                                         symbol=symbol.upper(),
                                         period='quarter',
                                         limit=limit)
@@ -102,7 +98,7 @@ def get_ratios(symbol, limit=50):
 
 def get_latest_rule40(ticker):
     ticker = ticker.upper()
-    quarterlies = fmpsdk.income_statement(apikey=fmp_api_key,
+    quarterlies = fmpsdk.income_statement(apikey=FMP_API_KEY,
                                           symbol=ticker,
                                           period='quarter',
                                           limit=5)

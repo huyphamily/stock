@@ -1,6 +1,9 @@
 #virtual environment
 .env
 
+#secrets
+env.py
+
 #sqlite db
 db.sqlite3
 
