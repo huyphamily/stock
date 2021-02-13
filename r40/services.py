@@ -6,7 +6,8 @@ import feedparser
 from requests_html import HTMLSession
 
 
-INDUSTRY_ALLOW_LIST = {"Software Application", "Software Infrastructure", "Internet Content & Information", "Software"}
+INDUSTRY_ALLOW_LIST = {"Software Application", "Software Infrastructure", "Internet Content & Information", "Software",
+                       "Information Technology Services", "Software—Infrastructure"}
 FILLING_NAME_8K = "8-K"
 
 
