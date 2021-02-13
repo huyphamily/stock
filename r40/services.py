@@ -2,8 +2,8 @@ import fmpsdk
 from datetime import date, datetime
 from re import match, search
 from stock.env import FMP_API_KEY
-import feedparser
-from requests_html import HTMLSession
+import requests
+from bs4 import BeautifulSoup
 
 
 INDUSTRY_ALLOW_LIST = {"Software Application", "Software Infrastructure", "Internet Content & Information", "Software",
@@ -142,34 +142,37 @@ def get_10q_list(report_date):
     year = report_date[6:10]
 
     # sec result for that month
-    sec_feed_result = feedparser.parse(f"https://www.sec.gov/Archives/edgar/monthly/xbrlrss-{year}-{month}.xml")
+    response = requests.get(f"https://www.sec.gov/Archives/edgar/monthly/xbrlrss-{year}-{month}.xml")
+    soup = BeautifulSoup(response.content, "xml")
+    items = soup.find_all('item')
+
     # 10-Q and on that date
-    filtered_sec_result = list(filter((lambda x: x.edgar_filingdate == report_date and x.summary == "10-Q"),
-                                      sec_feed_result.entries))
-    # grab list of company names
-    return list(map((lambda x: x.edgar_companyname), filtered_sec_result))
+    filtered_items = list(filter((lambda item: item.description.string == "10-Q" and
+                                  item.find('edgar:filingDate').string == report_date), items))
+
+    # grab list of ticker
+    result = []
+    for item in filtered_items:
+        files = item.find_all('edgar:xbrlFile')
+        for file in files:
+            file_name = file.get('edgar:file')
+            m = match('.{1,8}-\d{8}\.[a-z]{3}', file_name)
+            if m is not None:
+                ticker = file_name[0:-13]
+                result.append(ticker.upper())
+                break
+
+    return result
 
 
 def get_daily_r40_list(report_date):
     if report_date is None or not match("^\\d{2}/\\d{2}/\\d{4}$", report_date):
         report_date = date.today().strftime("%m/%d/%Y")
 
-    company_names = get_10q_list(report_date)
+    tickers = get_10q_list(report_date)
 
-    session = HTMLSession()
     result = []
-    for company_name in company_names:
-        # search for ticker symbol
-        search_result = session.get(f"https://google.com/search?q={company_name} stock")
-        raw_html = str(search_result.html.raw_html)
-        ticker_search = search("https://finance\.yahoo\.com/quote/.{1,8}/", raw_html)
-
-        if ticker_search is None:
-            print(f"no ticker found for {company_name}")
-            continue
-
-        ticker = ticker_search.group(0)[32:-1]
-        print(f"{company_name}: {ticker}")
+    for ticker in tickers:
         # filter out non saas companies
         company_profile = fmpsdk.company_profile(apikey=FMP_API_KEY, symbol=ticker)
 
