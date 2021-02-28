@@ -18,8 +18,6 @@ def symbol(request, ticker):
 
 def earning(request):
     report_date = request.GET.get("date")
-    if report_date is None or not match("^\\d{4}-\\d{2}-\\d{2}$", report_date):
-        report_date = date.today().strftime("%Y-%m-%d")
     companies = get_earning_companies(report_date)
 
     # Create the HttpResponse object with the appropriate CSV header.

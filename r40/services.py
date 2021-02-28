@@ -13,10 +13,14 @@ FILLING_NAME_8K = "8-K"
 
 
 def get_earning_companies(report_date):
-    if report_date is None or not match("^\\d{4}-\\d{2}-\\d{2}$", report_date):
-        report_date = date.today().strftime("%Y-%m-%d")
+    if report_date is None or not match("^\\d{2}-\\d{2}-\\d{4}$", report_date):
+        report_date = date.today().strftime("%m-%d-%Y")
 
-    companies = fmpsdk.earning_calendar(apikey=FMP_API_KEY, from_date=report_date, to_date=report_date)
+    month = report_date[0:2]
+    day = report_date[3:5]
+    year = report_date[6:10]
+
+    companies = fmpsdk.earning_calendar(apikey=FMP_API_KEY, from_date=f"{year}-{month}-{day}", to_date=report_date)
     filtered_companies = []
 
     for company in companies:
@@ -136,8 +140,8 @@ def get_latest_rule40(ticker):
 
 
 def get_10q_list(report_date):
-    if report_date is None or not match("^\\d{2}/\\d{2}/\\d{4}$", report_date):
-        report_date = date.today().strftime("%m/%d/%Y")
+    if report_date is None or not match("^\\d{2}-\\d{2}-\\d{4}$", report_date):
+        report_date = date.today().strftime("%m-%d-%Y")
 
     month = report_date[0:2]
     year = report_date[6:10]
@@ -167,8 +171,8 @@ def get_10q_list(report_date):
 
 
 def get_daily_r40_list(report_date):
-    if report_date is None or not match("^\\d{2}/\\d{2}/\\d{4}$", report_date):
-        report_date = date.today().strftime("%m/%d/%Y")
+    if report_date is None or not match("^\\d{2}-\\d{2}-\\d{4}$", report_date):
+        report_date = date.today().strftime("%m-%d-%Y")
 
     tickers = get_10q_list(report_date)
 
